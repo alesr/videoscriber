@@ -47,21 +47,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	if _, err := os.Stat(tmpDir); os.IsNotExist(err) {
-		logger.Info("creating tmp directory for storing video and audio files", slog.String("dir", tmpDir))
-
-		if err := os.Mkdir(tmpDir, os.ModePerm); err != nil {
-			logger.Error("Could not create tmp dir", slog.String("error", err.Error()))
-		}
-	}
-
-	if _, err := os.Stat(subtitlesDir); os.IsNotExist(err) {
-		logger.Info("creating subtitles directory for storing subtitles", slog.String("dir", subtitlesDir))
-
-		if err := os.Mkdir(subtitlesDir, os.ModePerm); err != nil {
-			logger.Error("Could not create subtitles dir", slog.String("error", err.Error()))
-		}
-	}
+	makeDir(logger, subtitlesDir)
+	makeDir(logger, tmpDir)
 
 	// Extracts audio from video.
 	audioStripper := audiostripper.New(extractCmd)
@@ -80,7 +67,7 @@ func main() {
 	)
 	if err != nil {
 		logger.Error("Could not initialize subtitles", slog.String("error", err.Error()))
-		os.Exit(2)
+		os.Exit(3)
 	}
 
 	// Handles requests.
@@ -120,4 +107,15 @@ func makeLogger(port string) *slog.Logger {
 		}
 		return attributes
 	}()))
+}
+
+func makeDir(logger *slog.Logger, path string) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		logger.Info("Creating directory", slog.String("path", path))
+
+		if err := os.Mkdir(path, os.ModePerm); err != nil {
+			logger.Error("Could not create directory", slog.String("path", path), slog.String("error", err.Error()))
+			os.Exit(2)
+		}
+	}
 }
