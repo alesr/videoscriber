@@ -37,13 +37,13 @@ func main() {
 	// Configurations.
 
 	port := flag.String("port", "8080", "port to listen")
+	openAIKey := flag.String("openai-key", "", "OpenAI API key")
 	flag.Parse()
 
 	logger := makeLogger(*port)
 
-	openAIKey := os.Getenv("OPENAI_API_KEY")
-	if openAIKey == "" {
-		logger.Error("OPENAI_API_KEY not set")
+	if *openAIKey == "" {
+		logger.Error("OpenAI API key is required")
 		os.Exit(1)
 	}
 
@@ -54,7 +54,7 @@ func main() {
 	audioStripper := audiostripper.New(extractCmd)
 
 	// Requests subtitles from OpenAI.
-	whisperAIClient := whisperclient.New(&http.Client{}, openAIKey, whisperAIModel)
+	whisperAIClient := whisperclient.New(&http.Client{}, *openAIKey, whisperAIModel)
 
 	// Coordinate audio extraction and subtitles request in concurrent manner.
 	subtitler, err := subtitles.New(

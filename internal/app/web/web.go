@@ -19,16 +19,12 @@ type App struct {
 
 // NewApp creates a new web app.
 func NewApp(logger *slog.Logger, port string, router chi.Router, h *Handlers) *App {
-	fs := http.FileServer(http.Dir(publicDir))
-
 	router.Route("/", func(r chi.Router) {
-		r.Get("/index", h.renderIndex)
 		r.Post("/upload", h.createSubtitles)
 		r.Get("/subtitles", h.listSubtitles)
 		r.Get("/subtitles/{name}", h.subtitleFile)
 		r.Get("/subtitles/zip", h.subtitlesZip)
 		r.Delete("/subtitles/{name}", h.deleteSubtitle)
-		r.Handle("/static/*", http.StripPrefix("/static", fs))
 	})
 
 	return &App{

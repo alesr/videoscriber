@@ -17,9 +17,7 @@ import (
 )
 
 const (
-	publicDir    string = "public"
-	indexPath    string = "public/index.html"
-	subtitlesDir string = "public/subtitles"
+	subtitlesDir string = "subtitles"
 	maxFileSize  int64  = 1 << 30 // 1GB
 )
 
@@ -39,11 +37,6 @@ func NewHandlers(logger *slog.Logger, subtitler subtitler) *Handlers {
 	}
 }
 
-// renderIndex renders the index page.
-func (h *Handlers) renderIndex(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, indexPath)
-}
-
 type uploadResponse struct {
 	Filenames []string `json:"filenames"`
 }
@@ -55,7 +48,7 @@ func (h *Handlers) createSubtitles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	files, ok := r.MultipartForm.File["file"]
-	if !ok {
+	if !ok || len(files) == 0 {
 		h.e(w, "No file part in request", nil, http.StatusBadRequest)
 		return
 	}
@@ -81,6 +74,14 @@ func (h *Handlers) createSubtitles(w http.ResponseWriter, r *http.Request) {
 		h.e(w, "Failed to generate subtitles", err, http.StatusInternalServerError)
 		return
 	}
+
+	// Add these lines to send a JSON response back to the Electron app
+	response := map[string]string{
+		"message": "Subtitles generated successfully",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 type listSubtitlesResponse struct {
@@ -209,6 +210,10 @@ func (h *Handlers) subtitlesZip(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) e(w http.ResponseWriter, message string, err error, statusCode int) {
-	h.logger.Error("responding with error", slog.String("error", err.Error()))
-	http.Error(w, err.Error(), statusCode)
+	if err != nil {
+		h.logger.Error("Responding with error", slog.String("error", err.Error()))
+	} else {
+		h.logger.Error("Responding with error", slog.String("message", message))
+	}
+	http.Error(w, message, statusCode)
 }
