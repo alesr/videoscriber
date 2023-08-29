@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Upload Videos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white font-body">
+  <div class="container mx-auto p-10">
+    <h1 class="text-4xl mb-5 text-center">Upload Videos</h1>
+    <div class="text-center">
+      <input type="file" id="file-input" multiple class="mb-2">
+      <p id="file-count" class="mb-4">0 files selected</p>
+      <button id="upload-button" class="bg-purple-600 text-white px-5 py-2 rounded cursor-not-allowed" disabled>
+        Upload
+      </button>
+      <div id="loader-container" class="mt-5 hidden">
+        <svg class="animate-spin h-5 w-5 mr-3 ..." viewBox="0 0 24 24"></svg>
+      </div>
+      <div id="grid-container" class="mt-5 grid grid-cols-2 gap-4 hidden">
+        <!-- Populated by JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+
+  <script>
+    const fileInput = document.getElementById("file-input");
+    const fileCountSpan = document.getElementById("file-count");
+    const uploadButton = document.getElementById("upload-button");
+    const loaderContainer = document.getElementById("loader-container");
+    const gridContainer = document.getElementById("grid-container");
+
+    fileInput.addEventListener("change", function() {
+      const fileCount = fileInput.files.length;
+      fileCountSpan.textContent = `${fileCount} files selected`;
+      uploadButton.classList.toggle("cursor-not-allowed", fileCount === 0);
+      uploadButton.disabled = fileCount === 0;
+    });
+
+    uploadButton.addEventListener("click", async function() {
+      loaderContainer.classList.remove('hidden');
+      uploadButton.disabled = true;
+      fileInput.disabled = true;
+
+      const formData = new FormData();
+      Array.from(fileInput.files).forEach(file => {
+        formData.append('file', file);
+      });
+
+      try {
+        const response = await fetch('/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (response.ok) {
+          console.log('Upload successful');
+        } else {
+          console.log('Server responded with status', response.status);
+        }
+      } catch (error) {
+        console.log('Network error', error);
+      }
+
+      loaderContainer.classList.add('hidden');
+      gridContainer.classList.remove('hidden');
+      uploadButton.disabled = false;
+      fileInput.disabled = false;
+      fileInput.value = '';
+      fileCountSpan.textContent = '0 files selected';
+      gridContainer.innerHTML = '';
+
+      const files = Array.from(fileInput.files);
+      files.forEach((file) => {
+        const fileNameWithoutExtension = file.name.split('.').slice(0, -1).join('.');
+        const gridItem = document.createElement("div");
+        gridItem.innerHTML = `
+          <span>${fileNameWithoutExtension}</span>
+          <button class="bg-purple-600 text-white px-2 py-1 rounded cursor-pointer" onclick="downloadSubtitle('${fileNameWithoutExtension}.srt')">
+            Download Subtitle
+          </button>
+        `;
+        gridContainer.appendChild(gridItem);
+      });
+    });
+
+    function downloadSubtitle(subtitleName) {
+      console.log(`Downloading ${subtitleName}`);
+    }
+  </script>
+</body>
+</html>
